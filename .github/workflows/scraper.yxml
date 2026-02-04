@@ -1,0 +1,37 @@
+name: School Scraper Cron
+
+on:
+  schedule:
+    # 這裡使用 UTC 時間。台灣整點 (:00) 是 UTC 的 :00，台灣 30 分 (:30) 是 UTC 的 :30
+    # 注意：GitHub Actions 的排程有時會延遲 5-10 分鐘啟動
+    - cron: '0,30 * * * *'
+  workflow_dispatch: # 讓你可以點按鈕手動測試執行
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run Scraper
+        # 將 GitHub Secrets 映射到環境變數
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GEMINI_KEY_1: ${{ secrets.GEMINI_KEY_1 }}
+          GEMINI_KEY_2: ${{ secrets.GEMINI_KEY_2 }}
+          GEMINI_KEY_3: ${{ secrets.GEMINI_KEY_3 }}
+          GEMINI_KEY_4: ${{ secrets.GEMINI_KEY_4 }}
+          GEMINI_KEY_5: ${{ secrets.GEMINI_KEY_5 }}
+          GEMINI_KEY_6: ${{ secrets.GEMINI_KEY_6 }}
+          TZ: Asia/Taipei
+        run: uv run python once.py

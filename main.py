@@ -1,12 +1,17 @@
-import os
+import os, dotenv
 import time
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from fetcher import fetcher 
 from classification import gemini_classify, ClassificationResponse
 import email.utils
+import schedule
 
 load_dotenv()
+api_keys = [os.getenv(key) for key in os.environ if key.startswith("GEMINI_KEY")]
+key_count = len(api_keys)
+current_key_idx = -1
+RETRY_LIMIT = 5
 
 # 初始化 Supabase
 url: str = os.environ.get("SUPABASE_URL") or ''
@@ -14,6 +19,7 @@ key: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or ''
 supabase: Client = create_client(url, key)
 
 def run_task():
+    global current_key_idx
     print("--- 開始執行定時爬蟲任務 ---")
     
     # 1. 抓取最新公告
@@ -42,8 +48,20 @@ def run_task():
 
     for ann in reversed(new_announcements): # 從舊到新存入，確保時間順序
         print(f"處理公告：{ann['title']}, url: {ann['url']}")
-        classification : ClassificationResponse = gemini_classify(ann.get('title'), ann.get('description', ""))
-        
+        for attempt in range(RETRY_LIMIT):
+            current_key_idx = (current_key_idx + 1) % key_count
+            try:
+                classification : ClassificationResponse = gemini_classify(ann.get('title'), ann.get('description', ""), api_key=api_keys[current_key_idx])
+                break
+            except Exception as e:
+                print(f"分類失敗，嘗試次數 {attempt + 1}/{RETRY_LIMIT}，錯誤訊息：{e}")
+                if "429" in str(e):
+                    time.sleep(30)
+                else:
+                    time.sleep(8)
+                continue
+        else:
+            classification = ClassificationResponse(category_id=-1, importance=-1, reason="分類失敗，超過重試次數")
         # 5. 寫入 Supabase
         data, count = supabase.table("announcements").insert({
             "title": ann['title'],
@@ -57,11 +75,16 @@ def run_task():
         }).execute()
         print(f"已存入: {ann['title']}，分類結果: {classification}")
         time.sleep(5)
+    else:
+        print("所有新公告皆已處理完畢。")
 
-# 定時任務邏輯
-if __name__ == "__main__":
-    while True:
-        run_task()
-        
-        print("等待 30 分鐘後再次執行...")
-        time.sleep(1800) # 30分鐘 = 1800秒
+schedule.every().hour.at(":00").do(run_task)
+schedule.every().hour.at(":30").do(run_task)
+print("公告分類服務已啟動，將每 30 分鐘檢查一次新公告...")
+run_task()
+while True:
+    try:
+        schedule.run_pending()
+        time.sleep(1)
+    except Exception as e:
+        print(f"Error occurred: {e}")

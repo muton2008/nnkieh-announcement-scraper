@@ -1,11 +1,7 @@
 from google import genai
 import dotenv
-import os
 from pydantic import BaseModel
 import time
-
-dotenv.load_dotenv()
-GEMINI_KEY = os.getenv("GEMINI_KEY")
 MODEL_ID = "gemini-3-flash-preview"
 
 class ClassificationResponse(BaseModel):
@@ -70,28 +66,21 @@ system_prompt= """# 角色
 標題：{title}
 描述：{description}"""
 
-client = genai.Client(api_key=GEMINI_KEY)
-
-def gemini_classify(title: str, description: str  = "", retry_count: int = 5) -> ClassificationResponse:
+def gemini_classify(title: str, description: str  = "", api_key: str = "") -> ClassificationResponse:
+    client = genai.Client(api_key=api_key)
     if title is None or title.strip() == "":
         return ClassificationResponse(category_id=-1, importance=-1, reason="標題為空，無法分類")
     description = description[:1000]
-    for attempt in range(retry_count):
-        try:
-            response = client.models.generate_content(
-                model=MODEL_ID,
-                config={
-                    'system_instruction': system_prompt,
-                    'response_mime_type': 'application/json',
-                    'response_schema': ClassificationResponse,
-                },
-                contents=f"標題：{title}\n描述：{description}"
-            )
-            # response.parsed 會直接回傳 ClassificationResponse 物件
-            return response.parsed
-        except Exception as e:
-            print(f"分類失敗，嘗試次數 {attempt + 1}/{retry_count}，錯誤訊息：{e}")
-            time.sleep(15)
-            continue
-    else:
-        return ClassificationResponse(category_id=-1, importance=-1, reason="分類失敗，超過重試次數")
+    response = client.models.generate_content(
+        model=MODEL_ID,
+        config={
+            'system_instruction': system_prompt,
+            'response_mime_type': 'application/json',
+            'response_schema': ClassificationResponse,
+        },
+        contents=f"標題：{title}\n描述：{description}"
+    )
+    # response.parsed 會直接回傳 ClassificationResponse 物件
+    if response.parsed is None:
+        raise ValueError(f"無法解析的回應: {response.text}")
+    return response.parsed

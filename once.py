@@ -6,6 +6,7 @@ from fetcher import fetcher
 from classification import gemini_classify, ClassificationResponse
 import email.utils
 import schedule
+from notify import send_line_broadcast
 
 load_dotenv()
 api_keys = [os.getenv(key) for key in os.environ if key.startswith("GEMINI_KEY")]
@@ -74,6 +75,8 @@ def run_task():
             "post_id": ann['post_id'],
         }).execute()
         print(f"已存入: {ann['title']}，分類結果: {classification}")
+        if int(classification.importance) == 1:
+            send_line_broadcast(ann['title'], ann['url'], ann['description'])
         time.sleep(5)
     else:
         print("所有新公告皆已處理完畢。")

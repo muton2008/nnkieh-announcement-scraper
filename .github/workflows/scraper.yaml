@@ -27,11 +27,11 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          GEMINI_KEY_1: ${{ secrets.GEMINI_KEY_1 }}
-          GEMINI_KEY_2: ${{ secrets.GEMINI_KEY_2 }}
-          GEMINI_KEY_3: ${{ secrets.GEMINI_KEY_3 }}
-          GEMINI_KEY_4: ${{ secrets.GEMINI_KEY_4 }}
-          GEMINI_KEY_5: ${{ secrets.GEMINI_KEY_5 }}
-          GEMINI_KEY_6: ${{ secrets.GEMINI_KEY_6 }}
+          GEMINI_KEY_1: ${{ secrets.GEMINI_KEY1 }}
+          GEMINI_KEY_2: ${{ secrets.GEMINI_KEY2 }}
+          GEMINI_KEY_3: ${{ secrets.GEMINI_KEY3 }}
+          GEMINI_KEY_4: ${{ secrets.GEMINI_KEY4 }}
+          GEMINI_KEY_5: ${{ secrets.GEMINI_KEY5 }}
+          GEMINI_KEY_6: ${{ secrets.GEMINI_KEY6 }}
           TZ: Asia/Taipei
         run: uv run python once.py

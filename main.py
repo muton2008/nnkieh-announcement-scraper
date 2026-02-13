@@ -73,6 +73,7 @@ def run_task():
             "publish_date": email.utils.parsedate_to_datetime(ann['published']).isoformat(),
             "link": ann['url'],
             "post_id": ann['post_id'],
+            "division":ann['category']
         }).execute()
         print(f"已存入: {ann['title']}，分類結果: {classification}")
         if int(classification.importance) == 1:

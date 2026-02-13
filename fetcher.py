@@ -69,7 +69,7 @@ def fetcher():
 
         pub_date = item.xpath("pubDate/text()")[0]
 
-        category = item.xpath("category/text()")
+        category = [cat for cat in item.xpath("category/text()") if cat == "國中部" or cat == "高中部"]
 
         parsed = urlparse(url)
         qs = parse_qs(parsed.query)
